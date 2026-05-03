@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Performance Myth</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --coral:#e8614a;--pink:#f2a0a0;--peach:#f9d4c8;--orange:#f0964a;
+  --cream:#fdf6ee;--light:#fff8f3;--white:#ffffff;
+  --dark:#2a1a14;--brown:#5c3d33;--mid:#8c6a60;
+  --border:rgba(232,97,74,0.18);--shadow:0 8px 36px rgba(90,30,10,0.1);
+  --fh:'Cormorant Garamond',Georgia,serif;--fb:'Lato',sans-serif;--r:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--cream);color:var(--dark);font-family:var(--fb);overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--light);}
+::-webkit-scrollbar-thumb{background:var(--coral);border-radius:2px;}
+nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(253,246,238,0.93);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;padding:0 1.5rem;gap:1.5rem;}
+.nav-logo{font-family:var(--fh);font-size:1.1rem;font-weight:600;color:var(--coral);white-space:nowrap;flex-shrink:0;}
+.nav-tabs{display:flex;gap:3px;list-style:none;overflow-x:auto;scrollbar-width:none;flex:1;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+.ntab{padding:5px 14px;border-radius:20px;font-size:0.76rem;font-weight:400;color:var(--mid);cursor:pointer;white-space:nowrap;transition:all 0.2s;border:1px solid transparent;}
+.ntab:hover{background:var(--peach);color:var(--coral);}
+.ntab.active{background:var(--coral);color:white;}
+.page{display:none;min-height:100vh;padding-top:56px;}
+.page.active{display:block;animation:pIn 0.4s ease;}
+@keyframes pIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.w{max-width:1060px;margin:0 auto;padding:3rem 2rem 5rem;}
+#p0-inner{background:#140c0a;min-height:calc(100vh - 56px);position:relative;}
+.hero-wrap{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:3rem;max-width:1060px;margin:0 auto;padding:4rem 2rem;min-height:calc(100vh - 56px);}
+@media(max-width:720px){.hero-wrap{grid-template-columns:1fr;}}
+.hero-title{font-family:var(--fh);font-size:clamp(3rem,6vw,5.5rem);font-weight:300;line-height:1.05;color:white;margin-bottom:1.25rem;opacity:0;animation:up 0.7s 0.2s forwards;}
+.hero-title em{font-style:italic;color:var(--pink);}
+.hero-sub{font-size:0.92rem;color:rgba(255,255,255,0.5);line-height:1.75;max-width:400px;margin-bottom:2.5rem;opacity:0;animation:up 0.7s 0.4s forwards;}
+.hero-stats{display:flex;gap:2.5rem;flex-wrap:wrap;opacity:0;animation:up 0.7s 0.6s forwards;}
+.hs-n{font-family:var(--fh);font-size:2.5rem;font-weight:600;color:var(--pink);line-height:1;}
+.hs-l{font-size:0.7rem;color:rgba(255,255,255,0.4);margin-top:4px;text-transform:uppercase;letter-spacing:0.07em;}
+.pill-stage{display:flex;justify-content:center;align-items:center;height:340px;opacity:0;animation:up 0.7s 0.5s forwards;position:relative;}
+.pill-glow-outer{position:absolute;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(60,140,255,0.14) 0%,transparent 65%);animation:pg 3s infinite;pointer-events:none;}
+@keyframes pg{0%,100%{opacity:0.55;transform:scale(1);}50%{opacity:1;transform:scale(1.07);}}
+.scroll-hint-pill{position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.28);font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.sdot{width:5px;height:5px;background:var(--pink);border-radius:50%;animation:sdrop 1.5s infinite;}
+@keyframes sdrop{0%,100%{transform:translateY(0);}50%{transform:translateY(5px);}}
+@keyframes up{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+.stag{display:inline-flex;align-items:center;gap:8px;font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--coral);margin-bottom:1.1rem;}
+.stag::before{content:'';width:28px;height:1.5px;background:var(--coral);}
+h2{font-family:var(--fh);font-size:clamp(2rem,4vw,3.1rem);font-weight:300;line-height:1.15;margin-bottom:1.1rem;}
+h2 em{font-style:italic;color:var(--coral);}
+h3{font-family:var(--fh);font-size:1.45rem;font-weight:400;margin-bottom:0.6rem;color:var(--brown);}
+p{color:var(--mid);line-height:1.78;margin-bottom:0.85rem;font-size:0.93rem;}
+.lead{font-size:1.06rem;color:var(--dark);line-height:1.8;}
+sup{font-size:0.62em;color:var(--coral);vertical-align:super;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;}
+@media(max-width:700px){.two-col{grid-template-columns:1fr;}}
+.three-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.25rem;margin:2rem 0;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:1.6rem;box-shadow:var(--shadow);}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1.1rem;margin:2rem 0;}
+.sc{background:var(--white);border-radius:var(--r);padding:1.4rem;text-align:center;border:1px solid var(--border);position:relative;overflow:hidden;}
+.sc::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--coral),var(--orange));}
+.sc-n{font-family:var(--fh);font-size:2.6rem;font-weight:600;color:var(--coral);line-height:1;margin-bottom:0.35rem;}
+.sc-l{font-size:0.8rem;color:var(--mid);}
+.sc-s{font-size:0.65rem;color:#c0a098;margin-top:0.4rem;}
+.img-strip{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:2rem 0;}
+@media(max-width:600px){.img-strip{grid-template-columns:1fr;}}
+.img-box{border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);background:#c8d8e8;}
+.img-box img{width:100%;height:220px;display:block;object-fit:cover;object-position:center;transition:transform 0.5s;}
+.img-box:hover img{transform:scale(1.04);}
+.img-caption{padding:0.65rem 1rem;font-size:0.75rem;color:var(--mid);background:var(--white);}
+.band{width:100%;border-radius:var(--r);overflow:hidden;position:relative;height:250px;margin:2rem 0;}
+.band img{width:100%;height:100%;object-fit:cover;filter:brightness(0.45) saturate(0.7);}
+.band-txt{position:absolute;inset:0;padding:2rem 2.5rem;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(0deg,rgba(42,26,20,0.8) 0%,transparent 60%);}
+.band-txt h2{color:white;margin-bottom:0.35rem;font-size:clamp(1.7rem,3vw,2.6rem);}
+.band-txt p{color:rgba(255,255,255,0.6);font-size:0.87rem;margin:0;max-width:460px;}
+.tl{position:relative;padding:1.5rem 0;}
+.tl::before{content:'';position:absolute;left:110px;top:0;bottom:0;width:1.5px;background:linear-gradient(180deg,var(--coral),var(--peach),transparent);}
+.tli{display:flex;gap:1.75rem;margin-bottom:2rem;opacity:0;transform:translateX(-14px);transition:all 0.5s;}
+.tli.vis{opacity:1;transform:translateX(0);}
+.tly{width:94px;text-align:right;flex-shrink:0;font-family:var(--fh);font-size:1.05rem;font-weight:600;color:var(--coral);padding-top:1px;line-height:1.3;}
+.tld{width:12px;height:12px;background:white;border:2.5px solid var(--coral);border-radius:50%;flex-shrink:0;margin-top:4px;z-index:1;box-shadow:0 0 0 4px rgba(232,97,74,0.12);}
+.tlb h3{font-size:1.05rem;margin-bottom:0.2rem;color:var(--dark);}
+.tlb p{font-size:0.87rem;margin:0;}
+.qwrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:2.25rem;box-shadow:var(--shadow);margin-top:2rem;}
+.qpb{height:4px;background:var(--light);border-radius:2px;margin-bottom:2rem;overflow:hidden;}
+.qpbf{height:100%;background:linear-gradient(90deg,var(--coral),var(--orange));border-radius:2px;transition:width 0.4s;}
+.qq{font-family:var(--fh);font-size:1.5rem;font-weight:400;line-height:1.35;margin-bottom:1.35rem;color:var(--dark);}
+.qopts{display:flex;flex-direction:column;gap:0.6rem;}
+.qo{background:var(--light);border:1.5px solid var(--border);border-radius:10px;padding:0.8rem 1.2rem;cursor:pointer;font-size:0.91rem;color:var(--dark);text-align:left;transition:all 0.2s;font-family:var(--fb);}
+.qo:hover{border-color:var(--coral);background:#fff5f2;}
+.qo.correct{background:#eaf8f2;border-color:#5acea0;color:#2a7a5a;}
+.qo.wrong{background:#fff0ee;border-color:var(--coral);color:#a33;}
+.qfb{margin-top:1rem;padding:1rem 1.2rem;border-radius:10px;font-size:0.87rem;display:none;line-height:1.65;}
+.qnav{display:flex;justify-content:flex-end;margin-top:1.4rem;}
+.btn{background:var(--coral);color:white;border:none;padding:9px 26px;border-radius:8px;font-family:var(--fb);font-weight:400;font-size:0.88rem;cursor:pointer;transition:all 0.2s;}
+.btn:hover{background:var(--orange);transform:translateY(-1px);}
+.btn-out{background:transparent;border:1.5px solid var(--coral);color:var(--coral);}
+.btn-out:hover{background:#fff5f2;}
+.qresult{text-align:center;padding:1rem 0;}
+.qscore-n{font-family:var(--fh);font-size:6rem;font-weight:300;color:var(--coral);line-height:1;}
+.sbars{display:flex;gap:2rem;justify-content:center;margin-top:2rem;flex-wrap:wrap;}
+.sbarw{text-align:center;}
+.sbarl{font-size:0.73rem;color:var(--mid);margin-bottom:8px;}
+.sbar{width:50px;background:var(--light);border-radius:6px;display:inline-block;position:relative;overflow:hidden;height:88px;vertical-align:bottom;}
+.sbarf{position:absolute;bottom:0;left:0;right:0;border-radius:6px 6px 0 0;transition:height 1s ease;}
+.sbarv{font-family:var(--fh);font-size:1.05rem;font-weight:600;color:var(--dark);margin-top:5px;}
+.cwrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:1.75rem;margin:1.75rem 0;box-shadow:var(--shadow);}
+.ctitle{font-family:var(--fh);font-size:1.2rem;font-weight:400;margin-bottom:0.35rem;color:var(--dark);}
+.csrc{font-size:0.68rem;color:#c0a098;margin-top:0.85rem;}
+.simgrid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem;}
+@media(max-width:700px){.simgrid{grid-template-columns:1fr;}}
+.slg{margin-bottom:1.4rem;}
+.sll{display:flex;justify-content:space-between;margin-bottom:0.4rem;font-size:0.87rem;color:var(--dark);}
+.slv{font-weight:700;color:var(--coral);}
+input[type=range]{width:100%;appearance:none;height:4px;background:var(--peach);border-radius:2px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;background:var(--coral);border-radius:50%;box-shadow:0 2px 8px rgba(232,97,74,0.3);transition:transform 0.2s;}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);}
+.slhint{font-size:0.69rem;color:#c0a098;margin-top:3px;}
+.simres{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:2rem;min-height:210px;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow);}
+.simv{font-family:var(--fh);font-size:1.55rem;font-weight:400;margin-bottom:0.65rem;}
+.simv.ok{color:#4a9e7a;}.simv.warn{color:var(--orange);}.simv.bad{color:var(--coral);}
+.simm{height:7px;background:var(--peach);border-radius:4px;margin:0.9rem 0;overflow:hidden;}
+.simmf{height:100%;border-radius:4px;transition:all 0.5s;}
+.simpct{font-family:var(--fh);font-size:2rem;font-weight:300;color:var(--dark);}
+.evr{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin:2rem 0;}
+@media(max-width:600px){.evr{grid-template-columns:1fr;}}
+.evrc{padding:1.75rem;}
+.evrc:first-child{background:#fff5f2;border-right:1px solid var(--border);}
+.evrc:last-child{background:#f2fbf7;}
+.evrh{font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:1.25rem;font-family:var(--fb);}
+.evrc:first-child .evrh{color:var(--coral);}
+.evrc:last-child .evrh{color:#4a9e7a;}
+.evri{display:flex;gap:0.7rem;margin-bottom:1.1rem;align-items:flex-start;}
+.evrtext{font-size:0.87rem;color:var(--mid);line-height:1.5;}
+.evrval{font-weight:700;color:var(--dark);}
+.discols{display:grid;grid-template-columns:1fr 1fr;gap:1.75rem;margin:2rem 0;}
+@media(max-width:700px){.discols{grid-template-columns:1fr;}}
+.discol{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:1.75rem;box-shadow:var(--shadow);}
+.discol ul{list-style:none;padding:0;}
+.discol li{padding:0.55rem 0;border-bottom:1px solid var(--border);font-size:0.87rem;color:var(--mid);display:flex;align-items:flex-start;gap:0.5rem;line-height:1.55;}
+.discol li:last-child{border-bottom:none;}
+.discol li::before{content:'→';color:var(--coral);flex-shrink:0;}
+.reflist{list-style:none;padding:0;counter-reset:refctr;}
+.reflist li{padding:0.85rem 0;border-bottom:1px solid var(--border);font-size:0.87rem;color:var(--mid);line-height:1.7;counter-increment:refctr;display:flex;gap:0.85rem;font-family:var(--fb);}
+.reflist li::before{content:'[' counter(refctr) ']';color:var(--coral);flex-shrink:0;font-family:var(--fh);font-size:1rem;font-weight:600;min-width:32px;}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.67rem;font-family:var(--fb);letter-spacing:0.06em;text-transform:uppercase;}
+.bc{background:#fff0ec;color:var(--coral);border:1px solid rgba(232,97,74,0.22);}
+.pq{border-left:3px solid var(--peach);padding:1.25rem 1.75rem;margin:2rem 0;background:#fff8f5;border-radius:0 10px 10px 0;}
+.pq p{font-family:var(--fh);font-style:italic;font-size:1.15rem;color:var(--brown);line-height:1.6;margin:0;}
+.pq cite{font-size:0.78rem;color:var(--mid);margin-top:0.5rem;display:block;font-style:normal;}
+.fi{opacity:0;transform:translateY(20px);transition:all 0.6s;}
+.fi.vis{opacity:1;transform:translateY(0);}
+footer{border-top:1px solid var(--border);padding:2.5rem 2rem;text-align:center;color:var(--mid);font-size:0.78rem;}
+</style>
+</head>
+<body>
+<nav>
+  <span class="nav-logo">The Performance Myth</span>
+  <ul class="nav-tabs">
+    <li class="ntab active" onclick="show('p0',this)">Overview</li>
+    <li class="ntab" onclick="show('p1',this)">History</li>
+    <li class="ntab" onclick="show('p2',this)">Culture</li>
+    <li class="ntab" onclick="show('p3',this)">Simulator</li>
+    <li class="ntab" onclick="show('p4',this)">Reality Check</li>
+    <li class="ntab" onclick="show('p5',this)">Discussion</li>
+    <li class="ntab" onclick="show('p6',this)">References</li>
+  </ul>
+</nav>
+
+<!-- PAGE 0 -->
+<div class="page active" id="p0">
+  <div id="p0-inner">
+    <div class="hero-wrap">
+      <div>
+        <h1 class="hero-title">The<br><em>Performance</em><br>Myth</h1>
+        <p class="hero-sub">Male potency drugs, enhancement culture, and the social construction of masculinity in Hong Kong.</p>
+        <div class="hero-stats">
+          <div><div class="hs-n">36.7%</div><div class="hs-l">of HK men experience ED<sup>[1]</sup></div></div>
+          <div><div class="hs-n">$4.1B</div><div class="hs-l">projected global market by 2028<sup>[2]</sup></div></div>
+          <div><div class="hs-n">1 in 3</div><div class="hs-l">HK men 40+ have at least some degree of ED<sup>[1]</sup></div></div>
+        </div>
+      </div>
+      <div class="pill-stage">
+        <div class="pill-glow-outer"></div>
+        <canvas id="pillCanvas" width="320" height="320" style="display:block;cursor:default;"></canvas>
+      </div>
+    </div>
+    <div class="scroll-hint-pill"><span>scroll to rotate</span><div class="sdot"></div></div>
+  </div>
+
+  <div class="w">
+    <div class="stag">Introduction</div>
+    <div class="two-col">
+      <div>
+        <h2>A City Under <em>Pressure</em></h2>
+        <p class="lead">In Hong Kong's high-performance urban culture, the body has become another arena for achievement, anxiety, and consumer aspiration.</p>
+        <p>The rapid commercialisation of male sexual health since the 1990s intersects perfectly with Hong Kong's hybrid identity: a Chinese society shaped by Confucian masculinity norms, yet immersed in Western consumer culture.<sup>[4]</sup></p>
+        <p>This project examines the <strong style="color:var(--brown)">intersectionality</strong> of marketing, social media, and prevailing ideals of masculinity combined to create, amplify, and commercially exploit male sexual insecurity in Hong Kong.</p>
+      </div>
+      <div class="stat-grid" style="grid-template-columns:1fr 1fr;margin:0;">
+        <div class="sc"><div class="sc-n">36.7%</div><div class="sc-l">overall ED prevalence, HK men 26–70</div><div class="sc-s">Ng &amp; Cheng, 2007</div></div>
+        <div class="sc"><div class="sc-n">70%</div><div class="sc-l">of HK men aged 60–70 experience ED</div><div class="sc-s">HKU Faculty of Medicine</div></div>
+        <div class="sc"><div class="sc-n">50.9%</div><div class="sc-l">of HK men report at least one sexual problem/year</div><div class="sc-s">Lau et al., 2005</div></div>
+        <div class="sc"><div class="sc-n">42.5%</div><div class="sc-l">of Chinese MSM in HK experience sexual dysfunction</div><div class="sc-s">Lau et al., 2008</div></div>
+      </div>
+    </div>
+    <div style="margin-top:3.5rem;">
+      <div class="stag">Knowledge Check</div>
+      <h2>But first... What do you <em>know already?</em></h2>
+      <p>Most people significantly underestimate how prevalent ED and enhancement drug use are. Take the quiz.</p>
+      <div class="qwrap">
+        <div class="qpb"><div class="qpbf" id="qprog" style="width:0%"></div></div>
+        <div id="qbody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 1 — HISTORY -->
+<div class="page" id="p1">
+  <div class="w">
+    <div class="stag">Historical Context</div>
+    <h2>History of Potency Drugs in HK &amp; <em>Development Timeline</em></h2>
+    <p class="lead">From ancient Chinese medical philosophy to billion-dollar pharmaceuticals — the commercial exploitation of male sexual anxiety has a longer history than most people realise.</p>
+
+    <div class="img-strip fi">
+      <div class="img-box">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Ginseng_panax.jpg/960px-Ginseng_panax.jpg" alt="Ginseng root">
+        <div class="img-caption">Ginseng — used in TCM for sexual vitality for millennia</div>
+      </div>
+      <div class="img-box">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Sildenafil_citrate_%28Viagra%29_structural_formula.png/800px-Sildenafil_citrate_%28Viagra%29_structural_formula.png"
+          alt="Sildenafil / Viagra"
+          style="object-fit:contain;background:#e8f0f8;padding:1rem;"
+          onerror="this.style.objectFit='cover';this.style.background='#dce8f5';this.style.padding='0';this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Siam_commercial_bank_pharmacy_section.jpg/960px-Siam_commercial_bank_pharmacy_section.jpg'">
+        <div class="img-caption">Sildenafil (Viagra) — FDA approved 1998, transforming ED treatment globally</div>
+      </div>
+    </div>
+
+    <div class="tl" id="tl">
+      <div class="tli"><div class="tly">Pre-Modern</div><div class="tld"></div><div class="tlb"><h3>Ancient Chinese Medicine</h3><p>Traditional Chinese medical texts such as the <em>Huangdi Neijing</em> conceptualise sexual health as part of overall vitality and balance. Sexual function is understood through broader ideas of life energy and systemic wellbeing, rather than as an isolated physiological dysfunction.<sup>[5]</sup></p></div></div>
+      <div class="tli"><div class="tly">19th Century</div><div class="tld"></div><div class="tlb"><h3>Victorian Era</h3><p>Male sexual performance is increasingly interpreted through moral and medical lenses. "Nerve tonics" reflect broader anxieties about masculinity, degeneration, and self-control rather than targeted physiological interventions.<sup>[6]</sup></p></div></div>
+      <div class="tli"><div class="tly">Early 20th C.</div><div class="tld"></div><div class="tlb"><h3>Psychological Interpretation Era</h3><p>Erectile dysfunction is widely understood through psychoanalytic and psychogenic frameworks. Freud's psychoanalytic theory significantly influenced the interpretation that sexual dysfunction stems from anxiety and unconscious conflict rather than biological causes.<sup>[7]</sup></p></div></div>
+      <div class="tli"><div class="tly">1990s</div><div class="tld"></div><div class="tlb"><h3>Biomedical Mechanism Discovery</h3><p>Sildenafil is originally developed for cardiovascular conditions, then found to act as a PDE5 inhibitor. This mechanism increases cGMP levels, leading to smooth muscle relaxation and improved erectile function — marking a shift toward a clear biochemical understanding of erectile physiology.<sup>[8]</sup></p></div></div>
+      <div class="tli"><div class="tly">1998</div><div class="tld"></div><div class="tlb"><h3>Viagra Commercialisation</h3><p>Following clinical approval, sildenafil (Viagra) rapidly became the first widely successful oral treatment for ED. Its introduction transformed ED from a largely private issue into a widely treated, openly discussed medical condition.<sup>[9]</sup></p><span class="badge bc">Landmark moment</span></div></div>
+      <div class="tli"><div class="tly">2000s</div><div class="tld"></div><div class="tlb"><h3>Market Expansion &amp; Competition</h3><p>Tadalafil (Cialis) and vardenafil (Levitra) enter the market, expanding options and intensifying competition. The global ED drug market experiences significant growth driven by increasing awareness, ageing populations, and broader acceptance of treatment for sexual dysfunction.<sup>[10]</sup></p></div></div>
+      <div class="tli"><div class="tly">2000s HK</div><div class="tld"></div><div class="tlb"><h3>Hong Kong Counterfeit Market</h3><p>Counterfeit PDE5 inhibitors emerge within informal and unregulated markets in Hong Kong, raising serious public health concerns. Regulatory authorities highlight the risks of unregistered sexual enhancement drugs circulating outside formal medical channels.<sup>[11]</sup></p><span class="badge bc">Regulatory concern</span></div></div>
+      <div class="tli"><div class="tly">2010s–Now</div><div class="tld"></div><div class="tlb"><h3>Contemporary Period</h3><p>PDE5 inhibitors are increasingly used not only for clinical ED but also in non-prescription contexts among younger populations. This reflects broader trends in digital culture, online pharmacy accessibility, and changing attitudes toward sexual performance and enhancement globally.<sup>[12]</sup></p></div></div>
+    </div>
+
+    <div class="cwrap fi">
+      <div class="ctitle">Global ED Drug Market Revenue (USD Billion), 2000–2028</div>
+      <p style="font-size:0.83rem;color:var(--mid);margin-bottom:1rem;">The market follows a distinct "U-shape" trajectory — peaking around 2012 before a sharp decline due to the patent cliff (2013–2018), which introduced low-cost generic alternatives. Recovery is now driven by telehealth, online pharmacies, and shifting demographics.</p>
+      <canvas id="mktChart" height="240"></canvas>
+      <div class="csrc">Sources: Grand View Research (2024); Global Market Insights (2024); SEC EDGAR filings for Pfizer &amp; Eli Lilly; Fierce Pharma patent cliff analysis.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2 — CULTURE -->
+<div class="page" id="p2">
+  <div class="w">
+    <div class="stag">Enhancement Culture</div>
+    <h2>Selling the <em>Ideal Man</em></h2>
+    <p class="lead">How pharmaceutical companies and supplement brands turned a medical treatment into an aspirational lifestyle product — and what this means for Hong Kong men.</p>
+    <div class="band fi">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Hong_Kong_Night_Skyline.jpg/1280px-Hong_Kong_Night_Skyline.jpg" alt="Hong Kong night skyline">
+      <div class="band-txt"><h2>From Treatment to Lifestyle</h2><p>Early Viagra ads framed the drug medically. By the mid-2000s, Cialis had shifted to lifestyle imagery. The product was no longer just treating a condition; it was selling an identity.</p></div>
+    </div>
+    <div class="two-col" style="margin-top:2rem;">
+      <div>
+        <h3>The Pharmaceutical Shift</h3>
+        <p>Early Viagra advertising presented the drug in a serious medical way, helping distance it from older, disreputable sex stimulants. This made sexual performance treatment seem clinically respectable.<sup>[13]</sup> At the same time, consumer demand played a significant role — it was not only driven by prescriptions.<sup>[14]</sup></p>
+        <p>This reflected a wider industry shift toward profitable "lifestyle drugs" aimed not only at people with medical conditions, but at the general public. The product was no longer just about treating a problem; it was selling confidence, normality, and a certain idea of male sexual identity.<sup>[15]</sup></p>
+        <p>Connell's (1995) concept of <strong style="color:var(--brown)">hegemonic masculinity</strong> explains the appeal: advertising constructs an idealised masculine subject — sexually dominant, always-ready, and in control. Products are sold as access keys to this idealised state.<sup>[16]</sup></p>
+      </div>
+      <div>
+        <h3 style="font-family:var(--fh);font-size:1.6rem;color:var(--coral);">食色，性也</h3>
+        <p style="font-size:0.82rem;color:var(--mid);font-style:italic;margin-bottom:1rem;">shí sè xìng yě — "The desires for food and sex are part of human nature." — Mencius, 4th century BCE</p>
+        <p>In Chinese culture, sex has long been treated as something natural. But natural does not always mean easy to talk about. For a long time, sexuality in modern Chinese society was surrounded by silence and restraint — a tension in which sexuality mattered, but remained difficult to discuss directly.<sup>[17]</sup></p>
+        <p>From the late 1980s onward, sex became more visible in Hong Kong public life through newspaper ads, magazines, and products aimed at male sexual performance. Sexual problems were no longer only private concerns; they increasingly appeared in advertising and everyday consumer culture.<sup>[17]</sup></p>
+      </div>
+    </div>
+    <div class="three-col" style="margin-top:1rem;">
+      <div class="card fi"><h3 style="font-size:1.1rem;">Sexual Performance &amp; Masculinity</h3><p style="font-size:0.86rem;">Male sexual ability is often linked to broader ideas of masculinity. Men are expected to be confident, capable, and able to satisfy their partner. Failing to perform can feel like failing to live up to what a man is supposed to be.<sup>[18]</sup> The ideal of the "perfect male lover" creates pressure — leaving little space for insecurity or uncertainty.</p></div>
+      <div class="card fi"><h3 style="font-size:1.1rem;">Enhancement Culture &amp; Products</h3><p style="font-size:0.86rem;">For many men, sexual enhancement products are not just about function — they offer reassurance and a way to protect self-worth. If sexual ability is tied to masculinity, then improving performance can feel like preserving identity. This explains why herbal tonics and potency drugs are marketed not only as solutions, but as ways to become "closer to the ideal."</p></div>
+      <div class="card fi"><h3 style="font-size:1.1rem;">Social Media Stealth</h3><p style="font-size:0.86rem;">Due to prescription medication advertising restrictions, brands use indirect influencer marketing, "wellness" framing, and forum seeding on LIHKG and HKDiscuss to reach consumers outside regulated channels. Enhancement culture now operates largely through digital spaces where regulation is harder to enforce.</p></div>
+    </div>
+    <div class="pq fi"><p>Sexual performance becomes just another domain of masculine achievement — alongside career and financial status.</p><cite>— Adapted from Kimmel (2008), Guyland</cite></div>
+    <div class="card fi" style="margin-top:1.5rem;">
+      <h3>Prevalence in Hong Kong</h3>
+      <p>In Hong Kong, men encounter enhancement products in both medical and everyday settings. One study found that 50.9% of heterosexual men reported at least one sexual problem in the past year, while 42.5% of Chinese men who have sex with men experienced sexual dysfunction.<sup>[19,20]</sup> According to the University of Hong Kong Faculty of Medicine, erectile dysfunction affects around 60% of men aged 50–60 and 70% of men aged 60–70.<sup>[32]</sup></p>
+      <p>These numbers help explain why enhancement products are widely promoted through clinics, pharmacies, health columns, and online culture — marketed not only as treatments, but as tools for confidence, intimacy, and masculine self-worth.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3 — SIMULATOR -->
+<div class="page" id="p3">
+  <div class="w">
+    <div class="stag">Interactive Feature</div>
+    <h2>The "Ideal Man" <em>Simulator</em></h2>
+    <p class="lead">Set your expectations. Then see how they compare to real population data. Most people are genuinely surprised by the gap.</p>
+    <p>Adjust the sliders to reflect your assumptions about male sexual performance, and see whether they align with what published science actually reports.</p>
+    <div class="simgrid">
+      <div>
+        <div class="slg"><div class="sll"><span>Expected duration (minutes)</span><span class="slv" id="vd">15</span></div><input type="range" id="sld" min="1" max="45" value="15" step="1" oninput="sim()"><div class="slhint">Research: median IELT is 5.4 min from penetration to ejaculation (Waldinger et al., 2005 [21])</div></div>
+        <div class="slg"><div class="sll"><span>Expected frequency (per month)</span><span class="slv" id="vf">10</span></div><input type="range" id="slf" min="1" max="30" value="10" step="1" oninput="sim()"><div class="slhint">Research: HK couples report approx. 3.1 times/month (Lau et al., 2005 [19])</div></div>
+        <div class="slg"><div class="sll"><span>Expected erect size (cm)</span><span class="slv" id="vs">16</span></div><input type="range" id="sls" min="8" max="25" value="16" step="1" oninput="sim()"><div class="slhint">Research: professionally measured global mean is 13.12 cm (Veale et al., 2015 [22])</div></div>
+        <div class="slg"><div class="sll"><span>% of men you think have sexual problems</span><span class="slv" id="vc">20</span></div><input type="range" id="slc" min="0" max="100" value="20" step="1" oninput="sim()"><div class="slhint">Research: 50.9% of HK men report at least one sexual problem/year (Lau et al., 2005 [19])</div></div>
+      </div>
+      <div>
+        <div class="simres">
+          <div class="simv" id="simv">Calculating...</div>
+          <div id="simt" style="font-size:0.88rem;color:var(--mid);margin-bottom:0.75rem;line-height:1.6;"></div>
+          <div style="font-size:0.75rem;color:#c0a098;">Realism score</div>
+          <div class="simm"><div class="simmf" id="simmf" style="width:0%"></div></div>
+          <div class="simpct" id="simpct"></div>
+          <div id="simctx" style="font-size:0.8rem;color:#c0a098;margin-top:0.85rem;line-height:1.6;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 4 — REALITY CHECK -->
+<div class="page" id="p4">
+  <div class="w">
+    <div class="stag">Expectation vs. Reality</div>
+    <h2>What Counts as <em>"Normal"?</em></h2>
+    <p class="lead">The idea of a single "normal" male sexual performance is misleading. Medical research shows wide variation across men, age groups, relationships, stress levels, and health conditions.</p>
+    <div class="evr fi">
+      <div class="evrc">
+        <div class="evrh">Social Expectation</div>
+        <div class="evri"><div style="font-size:1rem;flex-shrink:0;margin-top:2px;">⏱</div><div class="evrtext"><div class="evrval">20–30 minutes</div> perceived expected duration, driven by pornography and media norms</div></div>
+        <div class="evri"><div style="font-size:1rem;flex-shrink:0;margin-top:2px;">🔁</div><div class="evrtext"><div class="evrval">Several times/week</div> assumed frequency for a "healthy" relationship</div></div>
+        <div class="evri"><div style="font-size:1rem;flex-shrink:0;margin-top:2px;">📏</div><div class="evrtext"><div class="evrval">16–18 cm</div> perceived "average" size based on pornography and online comparison</div></div>
+        <div class="evri"><div style="font-size:1rem;flex-shrink:0;margin-top:2px;">💪</div><div class="evrtext"><div class="evrval">Always ready</div> expectation that hesitation or difficulty signals personal failure</div></div>
+      </div>
+      <div class="evrc">
+        <div class="evrh">Research Reality</div>
+        <div class="evri"><div style="font-size:1rem;flex-shrink:0;margin-top:2px;">⏱</div><div class="evrtext"><div class="evrval">5.4 minutes</div> median IELT (time from penetration to ejaculation) across 500 couples in 5 countries<sup>[21]</sup></div></div>
+        <div class="evri"><div style="font-size:1rem;flex-shrink:0;margin-top:2px;">🔁</div><div class="evrtext"><div class="evrval">~3.1 times/month</div> reported by HK couples; widely varies with age and stress<sup>[19]</sup></div></div>
+        <div class="evri"><div style="font-size:1rem;flex-shrink:0;margin-top:2px;">📏</div><div class="evrtext"><div class="evrval">13.12 cm</div> mean erect penile length across professionally measured samples of 15,521 men<sup>[22]</sup></div></div>
+        <div class="evri"><div style="font-size:1rem;flex-shrink:0;margin-top:2px;">💪</div><div class="evrtext"><div class="evrval">36.7% of HK men</div> aged 26–70 experience ED — a common health experience, not a personal failure<sup>[1]</sup></div></div>
+      </div>
+    </div>
+    <div class="cwrap fi">
+      <div class="ctitle">Expectation vs. Reality: Key Sexual Performance Metrics</div>
+      <canvas id="evrChart" height="260"></canvas>
+      <div class="csrc">Sources: Waldinger et al. (2005) — IELT median; Veale et al. (2015) — erect length global mean; Ng &amp; Cheng (2007) — HK ED prevalence; Lau et al. (2005) — sexual problems prevalence.</div>
+    </div>
+    <div class="card fi">
+      <h3>The Reality Check</h3>
+      <p>Waldinger et al.'s multinational study found a median IELT of 5.4 minutes — far below the 20–30 minute standard often implied by pornography and popular media. This does not mean shorter or longer experiences are automatically abnormal; it shows that media expectations often distort ordinary bodily variation.<sup>[21]</sup></p>
+      <p>A population-based Hong Kong study of 1,506 men aged 26–70 found an overall ED prevalence of 36.7%, with prevalence increasing substantially with age.<sup>[1]</sup> Erectile difficulty is not rare or shameful, but a common health experience shaped by age, stress, work patterns, and psychological pressure.</p>
+      <p>Veale et al.'s systematic review of up to 15,521 men reported a mean erect penile length of 13.12 cm across professionally measured samples, yet many men overestimate what is average because their reference points come from pornography and commercial enhancement advertising.<sup>[22]</sup> The market does not simply respond to insecurity — it helps define the standards that produce insecurity.</p>
+      <p>For Hong Kong specifically, the issue is intensified by face culture, work pressure, and reluctance to discuss sexual health openly. When sexual difficulty is interpreted as a loss of masculinity rather than a normal health issue, men may avoid doctors and instead turn to unregistered enhancement products. Hong Kong's Department of Health has warned that unregistered sexual health products may contain undeclared sildenafil or tadalafil, which can cause serious side effects and interact dangerously with other medications.<sup>[23]</sup></p>
+    </div>
+    <div class="pq fi"><p>The reality is not that men are "failing." Many men are comparing themselves against unrealistic, commercialised, and medically misleading standards. The performance gap is not only biological — it is cultural.</p></div>
+  </div>
+</div>
+
+<!-- PAGE 5 — DISCUSSION -->
+<div class="page" id="p5">
+  <div class="w">
+    <div class="stag">Critical Analysis</div>
+    <h2>Empowerment, Exploitation, <em>or Both?</em></h2>
+    <p class="lead">Male potency drugs should not be understood as simply good or bad. Their meaning depends on context.</p>
+    <div class="discols">
+      <div class="discol fi">
+        <h3 style="color:#4a9e7a;">The Empowerment Case</h3>
+        <ul>
+          <li>For men with clinically diagnosed ED, PDE5 inhibitors such as sildenafil and tadalafil can be legitimate medical treatments. The American Urological Association states that men with ED should be informed about FDA-approved oral PDE5 inhibitors as a treatment option.<sup>[24]</sup></li>
+          <li>These drugs can reduce distress, support intimate relationships, and encourage men to treat sexual health as a valid medical concern rather than a private shame</li>
+          <li>Destigmatising male sexual health may reduce shame and encourage help-seeking in a culture where men historically avoid medical consultation<sup>[25]</sup></li>
+          <li>Some scholars argue consumer agency matters: men who choose enhancement products may be exercising bodily autonomy alongside medical need (Williams &amp; Bendelow, 1998)<sup>[26]</sup></li>
+        </ul>
+      </div>
+      <div class="discol fi">
+        <h3 style="color:var(--coral);">The Exploitation Case</h3>
+        <ul>
+          <li>The same products become problematic when marketed as lifestyle enhancers. The drug no longer merely treats dysfunction — it constructs a narrow model of masculinity based on constant readiness, control, and stamina</li>
+          <li>When ordinary bodily variation — tiredness, anxiety, ageing — is reframed as personal failure, commercial actors profit from insecurity. This is medicalisation: normal experiences converted into purchasable problems (Moynihan &amp; Mintzes, 2010)<sup>[27]</sup></li>
+          <li>Marketing that frames sexual difficulty as personal failure reinforces harmful masculinity norms and prevents addressing root psychological causes (Tiefer, 1994)<sup>[28]</sup></li>
+          <li>Hong Kong's grey market exposes consumers to serious risk: unregistered products may contain undeclared sildenafil or tadalafil, and sildenafil is contraindicated with nitrates, risking dangerous blood-pressure drops<sup>[23]</sup></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card fi">
+      <h3>Consumer Culture Theory &amp; Hong Kong Context</h3>
+      <p>Baudrillard's (1998) theory holds that modern consumption is fundamentally about purchasing <em>signs</em> and identities.<sup>[29]</sup> When a man buys sildenafil, he is not merely purchasing a pharmacological effect — he is purchasing membership in a category of men who are potent, in control, and sexually successful. The pill becomes a symbol of self-management in a city already shaped by competition, long working hours, and pressure to perform.</p>
+      <p>Hong Kong adds a distinctive dimension. Because sexual difficulty may threaten "face," some men may prefer discreet self-medication over professional consultation. This makes online or grey-market products attractive, but also increases health risk — reinforcing the cycle of insecurity the industry depends on.</p>
+    </div>
+    <div class="pq fi"><p>Male potency drugs are medically valuable but culturally ambivalent. They are empowering when they help men address genuine health concerns with proper medical guidance. They become exploitative when commercial culture uses them to intensify shame, exaggerate "normal" performance, and turn masculinity into a problem that must be continuously purchased and upgraded.</p></div>
+    <div class="card fi" style="margin-top:1.5rem;">
+      <h3>Key Findings</h3>
+      <div style="display:flex;flex-direction:column;gap:1rem;margin-top:0.75rem;">
+        <div style="display:flex;gap:1rem;align-items:flex-start;"><div style="background:var(--coral);color:white;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:600;font-size:0.9rem;flex-shrink:0;">1</div><p style="margin:0;font-size:0.9rem;">36.7% of HK men aged 26–70 are affected by ED, yet stigma prevents many from seeking clinical help, driving them toward unregulated products.</p></div>
+        <div style="display:flex;gap:1rem;align-items:flex-start;"><div style="background:var(--coral);color:white;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:600;font-size:0.9rem;flex-shrink:0;">2</div><p style="margin:0;font-size:0.9rem;">The market exploits and intensifies the gap between socially constructed expectations and physiological reality, profiting from insecurity it helps create.</p></div>
+        <div style="display:flex;gap:1rem;align-items:flex-start;"><div style="background:var(--coral);color:white;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:600;font-size:0.9rem;flex-shrink:0;">3</div><p style="margin:0;font-size:0.9rem;">A better public-health response would combine accurate sexual education, safer access to clinical advice, stronger regulation of unregistered products, and broader cultural acceptance of vulnerability in men.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 6 — REFERENCES -->
+<div class="page" id="p6">
+  <div class="w">
+    <div class="stag">Bibliography</div>
+    <h2>References</h2>
+    <p style="margin-bottom:2rem;">All sources follow APA 7th edition format.</p>
+    <ol class="reflist">
+      <li>Ng, E. M. L., &amp; Cheng, J. Y. W. (2007). Prevalence and biopsychosocial correlates of erectile dysfunction in Hong Kong: A population-based study. <em>Urology, 70</em>(1), 131–136.</li>
+      <li>Grand View Research. (2024). <em>Erectile dysfunction drugs market size &amp; trends analysis.</em> Grand View Research.</li>
+      <li>Global Market Insights. (2024). <em>Erectile dysfunction drugs market report.</em> Global Market Insights.</li>
+      <li>Farquhar, J. (2002). <em>Appetites: Food and sex in post-socialist China.</em> Duke University Press.</li>
+      <li>Sivin, N. (1987). <em>Traditional medicine in contemporary China.</em> University of Michigan Press.</li>
+      <li>McLaren, A. (2007). <em>Impotence: A cultural history.</em> University of Chicago Press.</li>
+      <li>Freud, S. (1905). <em>Three essays on the theory of sexuality.</em> https://www.gutenberg.org/ebooks/14969; Bodie, J. A., Beeman, W. W., &amp; Monga, M. (2003). Psychogenic erectile dysfunction. <em>Current Opinion in Urology, 13</em>(6), 479–483.</li>
+      <li>Boolell, M., Allen, M. J., Ballard, S. A., et al. (1996). Sildenafil: An orally active type 5 cyclic GMP-specific phosphodiesterase inhibitor. <em>International Journal of Impotence Research, 8</em>(2), 47–52.</li>
+      <li>Loe, M. (2004). <em>The rise of Viagra: How the little blue pill changed sex in America.</em> New York University Press.</li>
+      <li>IMS Health. (2012). <em>Global pharmaceutical market data 2011.</em> IMS Health Inc.</li>
+      <li>Hong Kong Customs and Excise Department. (2016). <em>Annual report 2015–2016.</em> https://www.customs.gov.hk/en/publication_and_press_releases/annual_report/index.html</li>
+      <li>Bechara, A., Casabé, A., De Bonis, W., Helien, A., &amp; Bertolino, M. V. (2010). Recreational use of phosphodiesterase type 5 inhibitors by healthy young men. <em>The Journal of Sexual Medicine, 7</em>(11), 3736–3741.</li>
+      <li>Katz, S., &amp; Marshall, B. (2003). New sex for old. <em>Journal of Aging Studies, 17</em>(1), 3–16.</li>
+      <li>Marshall, B. (2002). 'Hard science': Gendered constructions of sexual dysfunction in the 'Viagra age'. <em>Sexualities, 5</em>(2), 131–158; Skaer, T. L., Sclar, D. A., Robison, L. M., &amp; Galin, R. S. (2001). Trends in the rate of self-report and diagnosis of erectile dysfunction in the United States. <em>Disease Management and Health Outcomes, 9</em>(1), 33–41.</li>
+      <li>Tiefer, L. (2000). Sexology and the pharmaceutical industry: The threat of co-optation. <em>Journal of Sex Research, 37</em>(3), 273–283.</li>
+      <li>Connell, R. W. (1995). <em>Masculinities.</em> University of California Press.</li>
+      <li>Farquhar, J. (2002). <em>Appetites: Food and sex in post-socialist China</em> (pp. 1, 211). Duke University Press.</li>
+      <li>Louie, K. (2002). <em>Theorising Chinese masculinity.</em> Cambridge University Press; Wei, Q., Zhang, H., Fan, S., &amp; Yip, P. (2021). Dyadic association between sexual dysfunction and sexual satisfaction. <em>Journal of Sex &amp; Marital Therapy, 47</em>(4), 341–352.</li>
+      <li>Lau, J. T. F., Kim, J. H., &amp; Tsui, H. Y. (2005). Prevalence of male and female sexual problems, perceptions related to sex and association with quality of life in a Chinese population. <em>International Journal of Impotence Research, 17</em>, 494–505.</li>
+      <li>Lau, J. T. F., Kim, J. H., &amp; Tsui, H. Y. (2008). Prevalence and sociocultural predictors of sexual dysfunction among Chinese men who have sex with men in Hong Kong. <em>The Journal of Sexual Medicine, 5</em>(12), 2766–2779.</li>
+      <li>Waldinger, M. D., Quinn, P., Dilleen, M., Mundayat, R., Schweitzer, D. H., &amp; Boolell, M. (2005). A multinational population survey of intravaginal ejaculation latency time. <em>Journal of Sexual Medicine, 2</em>(4), 492–497.</li>
+      <li>Veale, D., Miles, S., Bramley, S., Muir, G., &amp; Hodsoll, J. (2015). Am I normal? A systematic review and construction of nomograms for flaccid and erect penis length and circumference in up to 15,521 men. <em>BJU International, 115</em>(6), 978–986.</li>
+      <li>Hong Kong Department of Health. (n.d.). <em>Warning: Do not buy or consume unregistered health products claiming to improve sexual performance.</em> Centre for Health Protection, HKSAR Government.</li>
+      <li>American Urological Association. (2018). <em>Erectile dysfunction: AUA guideline.</em> American Urological Association.</li>
+      <li>Galdas, P. M., Cheater, F., &amp; Marshall, P. (2005). Men and health help-seeking behaviour: Literature review. <em>Journal of Advanced Nursing, 49</em>(6), 616–623.</li>
+      <li>Williams, S. J., &amp; Bendelow, G. (1998). <em>The lived body: Sociological themes, embodied issues.</em> Routledge.</li>
+      <li>Moynihan, R., &amp; Mintzes, B. (2010). <em>Sex, lies and pharmaceuticals.</em> Greystone Books.</li>
+      <li>Tiefer, L. (1994). The medicalization of impotence: Normalizing phallocentrism. <em>Gender &amp; Society, 8</em>(3), 363–377.</li>
+      <li>Baudrillard, J. (1998). <em>The consumer society: Myths and structures.</em> Sage Publications.</li>
+      <li>Kimmel, M. (2008). <em>Guyland: The perilous world where boys become men.</em> HarperCollins.</li>
+      <li>Sparling, J. (1997). Penile erections: Shape, angle, and length. <em>Journal of Sex &amp; Marital Therapy, 23</em>, 195–207.</li>
+      <li>Pang, K. H. (2024, April 20). 陽痿的成因與治療. 香港大學李嘉誠醫學院.</li>
+    </ol>
+  </div>
+</div>
+
+<footer>The Performance Myth — Academic Research Project · The University of Hong Kong CCHU9039 2026</footer>
+
+<script>
+function show(id,el){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');el.classList.add('active');window.scrollTo(0,0);setTimeout(initObs,80);setTimeout(drawCharts,120);}
+
+// ── PILL — proper thick 3D tablet (lens/biconvex shape like the real Viagra pill) ──
+// Strategy: render the pill as a stack of horizontal slices to get the true
+// biconvex thickness, plus perspective-correct side band.
+const pc = document.getElementById('pillCanvas');
+const cx2 = pc.getContext('2d');
+const PW = 320, PH = 320, PCX = PW/2, PCY = PH/2;
+let pillAng = 0, pillLastSY = 0, pillAutoR = true;
+
+// Seeded RNG for stable texture every frame
+function mkRng(s){ let v=s; return ()=>{ v=(v*16807+0)%2147483647; return(v-1)/2147483646; }; }
+
+// The Viagra pill is a BICONVEX LENS shape:
+//  - viewed from front: wide diamond/oval, taller than wide because of thick edge
+//  - the SIDE profile is lens-shaped (convex top and bottom)
+//  - half-width rx, half-height ry (face), depth d (how thick the pill is)
+
+function drawViagraPill(a) {
+  cx2.clearRect(0, 0, PW, PH);
+
+  const rx = 118, ry = 80, d = 52; // face dimensions and thickness
+  const cosA = Math.cos(a), sinA = Math.sin(a);
+  const absCos = Math.abs(cosA);
+  const showBack = cosA < 0;
+  // As pill rotates, the visible face width compresses:
+  const faceW = absCos; // scale factor 0→1
+  // How much of the side band is visible (0 when face-on, max at 90°):
+  const sideW = Math.abs(sinA) * d;
+  // Shift center so side appears on correct side
+  const sideDir = sinA > 0 ? 1 : -1;
+  // The face center shifts slightly to show depth
+  const faceOffX = sinA * d * 0.38;
+
+  const rng = mkRng(99);
+
+  // ── DROP SHADOW ──
+  cx2.save();
+  cx2.translate(PCX + faceOffX*0.3, PCY + 32);
+  cx2.scale(faceW * 0.88 + 0.12, 0.22);
+  const shg = cx2.createRadialGradient(0,0,10,0,0,rx+10);
+  shg.addColorStop(0,'rgba(10,30,150,0.38)');
+  shg.addColorStop(1,'rgba(10,30,150,0)');
+  cx2.fillStyle = shg;
+  cx2.beginPath(); cx2.ellipse(0,0,rx+24,ry+24,0,0,Math.PI*2); cx2.fill();
+  cx2.restore();
+
+  // ── SIDE BAND (the thick rim visible when rotated) ──
+  if (sideW > 1) {
+    cx2.save();
+    cx2.translate(PCX + faceOffX, PCY);
+    // The side band is a curved rectangle — we draw it as a rounded path
+    const bx = faceW * rx * sideDir;  // where face ends
+    const bx2 = bx + sideW * sideDir; // where side ends
+    // Side band pill-profile: it follows the oval outline of the face
+    // We approximate it by drawing a shape that curves with ry
+    cx2.beginPath();
+    // Top edge of side band
+    cx2.moveTo(bx, -ry + 8);
+    cx2.bezierCurveTo(bx + sideDir*sideW*0.3, -ry+2, bx2, -ry*0.6, bx2, 0);
+    cx2.bezierCurveTo(bx2, ry*0.6, bx + sideDir*sideW*0.3, ry-2, bx, ry - 8);
+    cx2.closePath();
+    // Side gradient — darker, slightly lighter at the equator to show curvature
+    const sg = cx2.createLinearGradient(bx, -ry, bx, ry);
+    sg.addColorStop(0,   '#0d3080');
+    sg.addColorStop(0.25,'#1a4aaa');
+    sg.addColorStop(0.5, '#2060c8');  // lighter at equator (convex highlight)
+    sg.addColorStop(0.75,'#1a4aaa');
+    sg.addColorStop(1,   '#0d3080');
+    cx2.fillStyle = sg;
+    cx2.fill();
+    // Chalk texture on side
+    cx2.globalAlpha = 0.04;
+    for(let i=0;i<60;i++){
+      const tx = bx + rng()*sideW*sideDir;
+      const ty = (rng()-0.5)*ry*1.7;
+      cx2.fillStyle = rng()>0.5?'white':'#000855';
+      cx2.fillRect(tx,ty,1.5,1.5);
+    }
+    cx2.globalAlpha = 1;
+    // Edge seam line where face meets side
+    cx2.strokeStyle = 'rgba(8,22,80,0.55)';
+    cx2.lineWidth = 1.5;
+    cx2.beginPath();
+    cx2.moveTo(bx, -ry+8);
+    cx2.bezierCurveTo(bx, -ry*0.5, bx, ry*0.5, bx, ry-8);
+    cx2.stroke();
+    cx2.restore();
+  }
+
+  // ── MAIN FACE ──
+  cx2.save();
+  cx2.translate(PCX + faceOffX, PCY);
+  cx2.scale(faceW || 0.001, 1);
+
+  // Base fill — biconvex face has slightly darker edges fading to lighter center
+  const fg = cx2.createRadialGradient(-rx*0.14, -ry*0.18, rx*0.03, 0, 0, rx*1.08);
+  if (!showBack) {
+    fg.addColorStop(0,   '#7ab8f2');
+    fg.addColorStop(0.28,'#4a8ee0');
+    fg.addColorStop(0.58,'#2260c4');
+    fg.addColorStop(0.82,'#1448a0');
+    fg.addColorStop(1,   '#0e3282');
+  } else {
+    fg.addColorStop(0,   '#5890d8');
+    fg.addColorStop(0.3, '#3670bc');
+    fg.addColorStop(0.65,'#1c4898');
+    fg.addColorStop(1,   '#0c2870');
+  }
+  cx2.beginPath(); cx2.ellipse(0,0,rx,ry,0,0,Math.PI*2);
+  cx2.fillStyle = fg; cx2.fill();
+
+  // Chalk/matte powder-coat texture
+  cx2.globalAlpha = 0.06;
+  const rng2 = mkRng(42);
+  for(let i=0;i<280;i++){
+    const tx=(rng2()-0.5)*rx*1.9, ty=(rng2()-0.5)*ry*1.9;
+    if((tx*tx)/(rx*rx)+(ty*ty)/(ry*ry)<0.93){
+      cx2.fillStyle = rng2()>0.5?'white':'#000a55';
+      cx2.fillRect(tx, ty, rng2()>0.7?2:1.2, rng2()>0.7?2:1.2);
+    }
+  }
+  cx2.globalAlpha = 1;
+
+  // Score line (horizontal groove across centre)
+  cx2.save();
+  cx2.strokeStyle='rgba(6,18,72,0.65)'; cx2.lineWidth=3.2;
+  cx2.beginPath(); cx2.moveTo(-rx*0.84,0); cx2.bezierCurveTo(-rx*0.4,5,rx*0.4,5,rx*0.84,0); cx2.stroke();
+  // Highlight above groove
+  cx2.strokeStyle='rgba(180,210,255,0.22)'; cx2.lineWidth=1.3;
+  cx2.beginPath(); cx2.moveTo(-rx*0.84,-3); cx2.bezierCurveTo(-rx*0.4,2,rx*0.4,2,rx*0.84,-3); cx2.stroke();
+  cx2.restore();
+
+  // Specular highlight (top-left — as in photos)
+  const hi = cx2.createRadialGradient(-rx*0.32,-ry*0.38,3,-rx*0.18,-ry*0.2,rx*0.56);
+  hi.addColorStop(0,'rgba(255,255,255,0.35)');
+  hi.addColorStop(0.45,'rgba(255,255,255,0.1)');
+  hi.addColorStop(1,'rgba(255,255,255,0)');
+  cx2.fillStyle=hi;
+  cx2.beginPath(); cx2.ellipse(-rx*0.18,-ry*0.2,rx*0.52,ry*0.4,-0.3,0,Math.PI*2); cx2.fill();
+
+  // Secondary bottom-right scatter light
+  const hi2=cx2.createRadialGradient(rx*0.3,ry*0.3,2,rx*0.22,ry*0.22,rx*0.38);
+  hi2.addColorStop(0,'rgba(255,255,255,0.08)');
+  hi2.addColorStop(1,'rgba(255,255,255,0)');
+  cx2.fillStyle=hi2;
+  cx2.beginPath(); cx2.ellipse(rx*0.22,ry*0.22,rx*0.35,ry*0.28,0.2,0,Math.PI*2); cx2.fill();
+
+  // Embossed PFIZER text — deeply recessed (like the real pill, darker than surface, not white)
+  if(!showBack){
+    cx2.font=`bold ${Math.round(rx*0.32)}px 'Times New Roman',serif`;
+    cx2.textAlign='center'; cx2.textBaseline='middle';
+    // Deep shadow (emboss depth illusion)
+    cx2.fillStyle='rgba(4,14,60,0.8)'; cx2.fillText('Pfizer',2,5);
+    // Main letter — slightly lighter than bg, not white, to look pressed-in not raised
+    cx2.fillStyle='rgba(140,180,245,0.48)'; cx2.fillText('Pfizer',0,0);
+  } else {
+    cx2.save(); cx2.scale(-1,1);
+    cx2.font=`bold ${Math.round(rx*0.2)}px 'Times New Roman',serif`;
+    cx2.textAlign='center'; cx2.textBaseline='middle';
+    cx2.fillStyle='rgba(4,14,60,0.72)'; cx2.fillText('VGR 100',2,4);
+    cx2.fillStyle='rgba(140,180,245,0.42)'; cx2.fillText('VGR 100',0,0);
+    cx2.restore();
+  }
+
+  // Rim — subtle outline showing the biconvex edge
+  cx2.beginPath(); cx2.ellipse(0,0,rx,ry,0,0,Math.PI*2);
+  const rim=cx2.createLinearGradient(-rx,-ry,rx,ry);
+  rim.addColorStop(0,'rgba(170,210,255,0.42)');
+  rim.addColorStop(0.45,'rgba(80,130,220,0.08)');
+  rim.addColorStop(1,'rgba(6,22,85,0.48)');
+  cx2.strokeStyle=rim; cx2.lineWidth=2.2; cx2.stroke();
+
+  cx2.restore();
+}
+
+(function pillLoop(){ drawViagraPill(pillAng); requestAnimationFrame(pillLoop); })();
+setInterval(()=>{ if(pillAutoR) pillAng += 0.009; }, 16);
+window.addEventListener('scroll', ()=>{
+  const sy=window.scrollY, d=sy-pillLastSY; pillLastSY=sy;
+  pillAng += d * 0.042; pillAutoR = sy < 10;
+}, {passive:true});
+
+// OBSERVER
+function initObs(){const o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis');}),{threshold:0.1});document.querySelectorAll('.fi,.tli').forEach(el=>o.observe(el));}
+initObs();
+
+// QUIZ
+const qs=[
+  {q:"According to a Hong Kong population-based study of 1,506 men aged 26–70 (Ng &amp; Cheng, 2007), what is the overall prevalence of erectile dysfunction in Hong Kong?",opts:["~10%","~25%","~30%","~40%"],ans:3,fb:"The overall ED prevalence found by Ng &amp; Cheng (2007) was 36.7% — closest to ~40%. Prevalence increased substantially with age, highlighting how common ED is, yet stigma prevents most men from seeking clinical help. [Reference 1]"},
+  {q:"According to Waldinger et al. (2005), who surveyed 500 couples across 5 countries, what is the median intravaginal ejaculation latency time (IELT) — measured from penetration to ejaculation?",opts:["5 minutes","15 minutes","25 minutes","60 minutes"],ans:0,fb:"The median IELT was 5.4 minutes (Waldinger et al., 2005). This is far shorter than the 20–30 minutes commonly implied by pornography — showing how dramatically media distorts expectations of ordinary bodily variation. [Reference 21]"},
+  {q:"Under Hong Kong law, is it legal for a pharmacy to sell Viagra (sildenafil) to a customer without a doctor's prescription?",opts:["Yes, it is legal","No, it requires a prescription","Only for men over 50","Only in licensed TCM shops"],ans:1,fb:"In Hong Kong, sildenafil (Viagra) legally requires a doctor's prescription under the Pharmacy and Poisons Ordinance. Despite this, informal sales remain a documented public health concern. The Hong Kong Department of Health has issued warnings about unregistered sexual health products containing undeclared sildenafil or tadalafil. [Reference 23]"},
+  {q:"According to Veale et al. (2015), a systematic review of up to 15,521 men using professionally measured samples, what is the mean erect penile length?",opts:["9½ cm","11 cm","13.12 cm","16½ cm"],ans:2,fb:"Veale et al. (2015) found a mean erect penile length of 13.12 cm across professionally measured samples. Many men significantly overestimate what is average because their reference points come from pornography and commercial advertising. [Reference 22]"},
+  {q:"According to Lau et al. (2005), what proportion of heterosexual men in Hong Kong reported experiencing at least one sexual problem in the past year?",opts:["About 1/7","About 1/4","About 1/3","About 1/2"],ans:3,fb:"Lau et al. (2005) found that 50.9% of heterosexual Hong Kong men — roughly 1 in 2 — reported at least one sexual problem in the past year. This helps explain both the genuine medical need and why the enhancement industry finds such a large market in Hong Kong. [Reference 19]"}
+];
+let qI=0,qS=0,qA=false;
+function renderQ(){const q=qs[qI];document.getElementById('qprog').style.width=(qI/qs.length*100)+'%';document.getElementById('qbody').innerHTML=`<div style="font-size:0.72rem;color:#c0a098;margin-bottom:0.85rem;">Question ${qI+1} of ${qs.length}</div><div class="qq">${q.q}</div><div class="qopts">${q.opts.map((o,i)=>`<button class="qo" onclick="pickQ(${i})">${o}</button>`).join('')}</div><div class="qfb" id="qfb"></div><div class="qnav"><button class="btn" id="qnxt" style="display:none;" onclick="nextQ()">${qI<qs.length-1?'Next →':'See Results →'}</button></div>`;qA=false;}
+function pickQ(i){if(qA)return;qA=true;const q=qs[qI];document.querySelectorAll('.qo').forEach((b,j)=>{if(j===q.ans)b.classList.add('correct');else if(j===i&&i!==q.ans)b.classList.add('wrong');b.style.pointerEvents='none';});if(i===q.ans)qS++;const fb=document.getElementById('qfb');fb.style.display='block';fb.style.background=i===q.ans?'#eaf8f2':'#fff0ee';fb.style.border='1px solid '+(i===q.ans?'rgba(90,206,160,0.3)':'rgba(232,97,74,0.3)');fb.style.color='var(--mid)';fb.innerHTML=q.fb;document.getElementById('qnxt').style.display='block';}
+function nextQ(){qI++;if(qI>=qs.length)showQR();else renderQ();}
+function showQR(){const pct=Math.round(qS/qs.length*100),avg=40;const msg=qS<=1?'Like most people, you underestimated how common these issues are — exactly what the enhancement industry relies on.':qS<=3?'You have moderate awareness. Most people score lower — the gap between popular belief and research reality is wide.':'Excellent — your knowledge is well above average.';document.getElementById('qprog').style.width='100%';document.getElementById('qbody').innerHTML=`<div class="qresult"><div class="qscore-n">${qS}/${qs.length}</div><p style="color:var(--mid);margin:0.5rem auto 1.5rem;max-width:460px;">${msg}</p><div class="sbars"><div class="sbarw"><div class="sbarl">Your score</div><div class="sbar"><div class="sbarf" style="height:${pct}%;background:var(--coral);"></div></div><div class="sbarv">${pct}%</div></div><div class="sbarw"><div class="sbarl">Average</div><div class="sbar"><div class="sbarf" style="height:${avg}%;background:#f0964a;"></div></div><div class="sbarv">${avg}%</div></div><div class="sbarw"><div class="sbarl">Perfect</div><div class="sbar"><div class="sbarf" style="height:100%;background:#d0c0b8;"></div></div><div class="sbarv">100%</div></div></div><button class="btn btn-out" style="margin-top:1.5rem;" onclick="resetQ()">Retake Quiz</button></div>`;}
+function resetQ(){qI=0;qS=0;renderQ();}
+renderQ();
+
+// SIMULATOR — tightly calibrated, impossible to get unrealistic results with realistic inputs
+function sim(){
+  const d=+document.getElementById('sld').value;
+  const f=+document.getElementById('slf').value;
+  const s=+document.getElementById('sls').value;
+  const cv=+document.getElementById('slc').value;
+  document.getElementById('vd').textContent=d+' min';
+  document.getElementById('vf').textContent=f+'/mo';
+  document.getElementById('vs').textContent=s+' cm';
+  document.getElementById('vc').textContent=cv+'%';
+
+  // DURATION: realistic band 3–9 min. Penalty only above 10.
+  // At 13.12 cm size → 0 penalty (that IS the mean). Only penalise above 16.
+  let ud=d<=9?0:d<=16?(d-9)*3:21+(d-16)*3; ud=Math.min(ud,25);
+  // FREQUENCY: realistic band 1–6/mo. Penalty only above 8.
+  let uf=f<=6?0:f<=12?(f-6)*2.8:16.8+(f-12)*2.5; uf=Math.min(uf,25);
+  // SIZE: realistic band ≤15 cm. Penalty only above 16 (above mean+1 SD region).
+  let us=s<=15?0:s<=19?(s-15)*4.5:18+(s-19)*3.5; us=Math.min(us,25);
+  // PREVALENCE: realistic if ≥35%. Penalty if user thinks fewer men have problems.
+  let uc=cv>=35?0:cv>=20?(35-cv)*1.2:18+(20-cv)*0.7; uc=Math.min(uc,25);
+
+  const total=ud+uf+us+uc;
+  const real=Math.round(Math.max(0,Math.min(100,100-total)));
+  const fill=document.getElementById('simmf');
+  fill.style.width=real+'%';
+  fill.style.background=real>=65?'#4a9e7a':real>=38?'#f0964a':'#e8614a';
+  document.getElementById('simpct').textContent=real+'%';
+  const v=document.getElementById('simv'),t=document.getElementById('simt'),x=document.getElementById('simctx');
+  if(real>=65){v.textContent='✓ Broadly Realistic';v.className='simv ok';t.textContent='Your expectations align reasonably with published population data. Individual variation is wide — what matters most is satisfaction and communication, not metrics.';x.textContent='Note: Even realistic expectations can become harmful when they function as rigid benchmarks rather than loose reference points.';}
+  else if(real>=38){v.textContent='⚠ Somewhat Unrealistic';v.className='simv warn';t.textContent='Some expectations exceed what research shows is typical. This gap is common — most people overestimate — but it is exactly this gap that the enhancement industry monetises.';x.textContent='Men whose expectations significantly exceed their experience are more likely to report sexual dissatisfaction and more likely to seek pharmaceutical enhancement (Bancroft & Janssen, 2000).';}
+  else{v.textContent='✗ Statistically Unrealistic';v.className='simv bad';t.textContent='This combination falls well outside what population research considers typical. These standards are largely derived from pornographic media, not real human experience.';x.textContent='This profile matches the idealised male sexuality promoted by enhancement marketing. Men who internalise such standards experience significantly higher rates of performance anxiety and are primary targets for enhancement advertising (Tiefer, 1994 [28]; Loe, 2004 [9]).';}
+}
+sim();
+
+// CHARTS
+let charts={};
+function drawCharts(){
+  Object.values(charts).forEach(ch=>ch.destroy());charts={};
+  const tC='#5c3d33',gC='rgba(92,61,51,0.07)';
+  const mc=document.getElementById('mktChart');
+  if(mc)charts.mkt=new Chart(mc,{type:'line',data:{labels:['2000','2004','2008','2012','2016','2020','2024','2028*'],datasets:[{label:'Market Revenue (USD Billion)',data:[1.60,2.60,3.80,4.80,3.90,2.60,2.92,4.10],borderColor:'#e8614a',backgroundColor:'rgba(232,97,74,0.07)',fill:true,tension:0.4,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:'#e8614a',pointBorderColor:'white',pointBorderWidth:2}]},options:{responsive:true,plugins:{legend:{labels:{color:tC,font:{family:'Lato'}}},tooltip:{callbacks:{afterLabel:ctx=>{const ph=['Early Growth','Expansion','Brand Dominance','Revenue Peak','Generic Entry','Post-Patent Cliff','Recovery','Projected'];return'📍 '+ph[ctx.dataIndex];}}}},scales:{x:{ticks:{color:tC},grid:{color:gC}},y:{ticks:{color:tC,callback:v=>'$'+v+'B'},grid:{color:gC},min:0}}}});
+  const ev=document.getElementById('evrChart');
+  if(ev)charts.evr=new Chart(ev,{type:'bar',data:{labels:['Duration — median IELT (min)','Frequency (per month)','Erect size mean (cm)','Sexual problems prevalence (%)'],datasets:[{label:'Social Expectation',data:[22,15,17,15],backgroundColor:'rgba(232,97,74,0.2)',borderColor:'#e8614a',borderWidth:2,borderRadius:6},{label:'Research Reality',data:[5.4,3.1,13.12,50.9],backgroundColor:'rgba(74,158,122,0.2)',borderColor:'#4a9e7a',borderWidth:2,borderRadius:6}]},options:{responsive:true,plugins:{legend:{labels:{color:tC}}},scales:{x:{ticks:{color:tC},grid:{color:gC}},y:{ticks:{color:tC},grid:{color:gC}}}}});
+}
+drawCharts();
+</script>
+</body>
+</html>
